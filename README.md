@@ -1,3 +1,36 @@
+# JobsSync CI/CD Pipeline
+
+    This document provides step-by-step instructions to set up a CI/CD pipeline for the JobsSync application using Jenkins, Maven, Docker, AWS ECR, and S3.
+
+# Table of Contents
+
+1. Prerequisites
+
+2. Pipeline Overview
+
+3. Step-by-Step Setup
+
+        Step 1: Set Up Jenkins
+
+        Step 2: Create a Jenkins Pipeline
+
+        Step 3: Create the Jenkinsfile
+
+        Step 4: Set Up Docker
+
+        Step 5: Set Up AWS ECR and S3
+
+        Step 6: Run the Pipeline
+
+        Step 7: Deploy the Application
+
+4. Pipeline Flow
+
+5. Troubleshooting
+
+6. Contact
+<br>
+
 # 1. Prerequisites
 Before starting, ensure you have the following:
 
@@ -31,38 +64,39 @@ Before starting, ensure you have the following:
 
 1. Install Jenkins:
 
-Follow the installation steps for your operating system (Windows, macOS, or Linux) as described earlier.
+    Follow the installation steps for your operating system (Windows, macOS, or Linux) as described earlier.
 
 2. Install Required Plugins:
 
-Go to Manage Jenkins → Manage Plugins → Available.
+    Go to Manage Jenkins → Manage Plugins → Available.
 
-Install the following plugins:
+3. Install the following plugins:
 
-Git
+        Git
 
-Maven Integration
+        Maven Integration
 
-Docker
+        Docker
 
-AWS ECR
+        AWS ECR
 
-Email Extension
+        Email Extension
 
-Configure Global Tools:
+4. Configure Global Tools:
 
 Go to Manage Jenkins → Global Tool Configuration.
 
-Set up:
+5. Set up:
 
-JDK: Install JDK 8 (or the version specified in your pom.xml).
+        JDK: Install JDK 8 (or the version specified in your pom.xml).
 
-Git: Ensure Git is installed and configured.
+        Git: Ensure Git is installed and configured.
 
-Maven: Install Maven (e.g., version 3.8.6).
+        Maven: Install Maven (e.g., version 3.8.6).
 
-Configure AWS Credentials:
+6. Configure AWS Credentials:
 
-Go to Manage Jenkins → Manage Credentials.
+    Go to Manage Jenkins → Manage Credentials.
 
-Add your AWS credentials (Access Key ID and Secret Access Key).
+    Add your AWS credentials (Access Key ID and Secret Access Key).<br>
+
