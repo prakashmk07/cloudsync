@@ -287,5 +287,4 @@ pipeline {
 
 ### **Contact**
 For any questions or issues, please contact:
-
-    - ***Terukula Sai***: `codesai127.0.0.1@gmail.com`
+- ***Terukula Sai***: `codesai127.0.0.1@gmail.com`
