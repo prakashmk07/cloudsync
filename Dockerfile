@@ -1,14 +1,11 @@
-# Use the official Tomcat image with OpenJDK
-FROM tomcat:9.0-jdk17-openjdk-slim
+# Use an official Tomcat image as the base image
+FROM tomcat:9.0
 
-# Set the working directory inside the container
-WORKDIR /usr/local/tomcat/webapps
+# Copy the WAR file into the Tomcat webapps directory
+COPY Mock.war /usr/local/tomcat/webapps/
 
-# Copy the WAR file from the target directory to the Tomcat webapps directory
-COPY target/Mock.war /usr/local/tomcat/webapps/
-
-# Expose the port that Tomcat uses (usually 8080)
-EXPOSE 8080
+# Expose port 8081
+EXPOSE 8081
 
 # Start Tomcat
 CMD ["catalina.sh", "run"]

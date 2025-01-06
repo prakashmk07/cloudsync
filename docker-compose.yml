@@ -1,27 +1,29 @@
-version: '3'
-services:
-  webapp:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      - DATABASE_URL=jdbc:postgresql://db:5432/exampledb
-      - DATABASE_USERNAME=exampleuser
-      - DATABASE_PASSWORD=examplepassword
-    depends_on:
-      - db
-    restart: always
+version: '3.8'
 
-  db:
-    image: postgres:latest
+services:
+  jobsync:
+    image: your-aws-account-id.dkr.ecr.your-aws-region.amazonaws.com/jobsync-repo:latest
+    container_name: jobsync
+    ports:
+      - "8081:8081" 
     environment:
-      POSTGRES_USER: exampleuser
-      POSTGRES_PASSWORD: examplepassword
-      POSTGRES_DB: exampledb
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/jobsync_db
+      - SPRING_DATASOURCE_USERNAME=jobsync_user
+      - SPRING_DATASOURCE_PASSWORD=jobsync_password
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=jobsync_user
+      - POSTGRES_PASSWORD=jobsync_password
+      - POSTGRES_DB=jobsync_db
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
+      - postgres-data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
-    driver: local
+  postgres-data:
