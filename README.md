@@ -1,4 +1,4 @@
-## 1. Prerequisites
+# 1. Prerequisites
 Before starting, ensure you have the following:
 
 1. Git Repository:
@@ -25,10 +25,9 @@ Before starting, ensure you have the following:
 
     PostgreSQL is available for testing and deployment (can be run locally or in a Docker container).<br>
 
-_________________________________________________________________________________________________________________________________
 
-## 2. Step-by-Step CI/CD Pipeline Setup
-# Step 1: Set Up Jenkins
+# 2. Step-by-Step CI/CD Pipeline Setup
+### Step 1: Set Up Jenkins
 
 1. Install Jenkins:
 
