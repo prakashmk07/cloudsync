@@ -113,7 +113,7 @@ pipeline {
     stages {
         stage('Checkout Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo/jobsync.git'
+                git branch: 'main', url: 'https://github.com/SAI127001/JobsSync.git'
             }
         }
 
@@ -201,4 +201,91 @@ pipeline {
    # Start Tomcat
    CMD ["catalina.sh", "run"]
    ```
-2. 
+2. **Buid and test**
+
+    - Build the Docker image:
+    ```
+    docker build -t jobsync:latest ./docker
+    ```
+    - Run the Docker container:
+    ```
+    docker run -d --name jobsync -p 8081:8081 jobsync:latest
+    ```
+    - Access the application at:
+    ```
+    http://localhost:8081
+    ```
+### **Step 5: Set Up AWS ECR and S3**
+1. **Create an ECR Repository:**
+    - Go to **AWS ECR** → **Create Repository**
+    - Name the repository (e.g., `jobsync-repo`)
+
+2. **Create an S3 Bucket:**
+
+    - Go to **AWS S3** → **Create Bucket**
+    - Name the bucket (e.g., `jobsync-artifacts`).
+    - Enable Versioning for the bucket.
+
+---
+
+### **Step 6: Run the Pipeline**
+1. **Trigger the Pipeline:**
+    - Manually trigger the pipeline by clicking **Build Now** in Jenkins.
+    - Alternatively, configure the pipeline to trigger automatically on Git pushes (using webhooks).
+
+2. **Monitor the Pipeline:**
+    - Check the pipeline logs in real-time to monitor progress.
+    - Verify that:
+        - The WAR file is uploaded to S3.
+        - The Docker image is pushed to AWS ECR.
+
+---
+
+### **Step 7: Deploy the Application**
+1. **Deploy to Docker:**
+    - Pull the Docker image from AWS ECR:
+    ```
+    aws ecr get-login-password --region <your-aws-region> | docker login --username AWS --password-stdin <your-aws-account-id>.dkr.ecr.<your-aws-region>.amazonaws.com
+    docker pull <your-aws-account-id>.dkr.ecr.<your-aws-region>.amazonaws.com/jobsync-repo:<version>
+    ```
+    - Run the Docker container:
+    ```
+    docker run -d --name jobsync -p 8081:8081 <your-aws-account-id>.dkr.ecr.<your-aws-region>.amazonaws.com/jobsync-repo:<version>
+    ```
+2. **Access the Application:**
+    - Open your browser and go to:
+    ```
+    http://localhost:8081
+    ```
+---
+
+### **Pipeline Flow**
+
+1. Developer pushes code to the Git repository.
+2. Jenkins triggers the pipeline:
+    - Builds the WAR file using Maven.
+    - Runs unit tests.
+    - Builds and pushes the Docker image to AWS ECR.
+    - Uploads the WAR file to S3 with versioning.
+3. Application is deployed to the target environment.
+
+---
+
+### **Troubleshooting**
+
+- **Jenkins Build Fails:**
+    - Check the Jenkins console output for errors.
+    - Ensure all required plugins are installed.
+- **Docker Build Fails:**
+    - Verify the Dockerfile is correct.
+    - Ensure Docker is installed and running on the Jenkins server.
+- **AWS ECR Push Fails:**
+    - Verify AWS credentials are correctly configured in Jenkins.
+    - Ensure the ECR repository exists.
+
+---
+
+### **Contact**
+For any questions or issues, please contact:
+
+    - ***Terukula Sai***: `codesai127.0.0.1@gmail.com`
