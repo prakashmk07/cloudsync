@@ -8,7 +8,7 @@ pipeline {
         APP_NAME = 'jobsync'
         S3_BUCKET = 'jobsync-artifacts'
         POSTGRES_USER = 'admin'
-        POSTGRES_PASSWORD = credentials('admin') // Use Jenkins credentials
+        POSTGRES_PASSWORD = credentials('#Sai9987886552') // Use Jenkins credentials
         POSTGRES_DB = 'jobsync_db'
         EC2_INSTANCE_IP = '34.239.130.253'
         EC2_SSH_USER = 'ec2-user'
