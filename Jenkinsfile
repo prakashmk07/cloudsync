@@ -5,7 +5,7 @@ node {
     env.APP_NAME = 'jobsync'
     env.S3_BUCKET = 'jobsync-artifacts'
     env.POSTGRES_USER = 'admin'
-    env.POSTGRES_PASSWORD = '#Sai9987886552'
+    env.POSTGRES_PASSWORD = 'admin'
     env.POSTGRES_DB = 'jobsync_db'
     env.EC2_INSTANCE_IP = '34.239.130.253'
     env.EC2_SSH_USER = 'ec2-user'
