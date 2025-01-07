@@ -10,7 +10,7 @@ pipeline {
         POSTGRES_USER = 'admin'
         POSTGRES_PASSWORD = credentials('POSTGRES_PASSWORD') // Use Jenkins credentials
         POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = '34.229.174.33'
+        EC2_INSTANCE_IP = '34.239.130.253'
         EC2_SSH_USER = 'ec2-user'
     }
 
