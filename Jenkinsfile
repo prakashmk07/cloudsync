@@ -37,11 +37,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
-                    def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
+
+                    sh 'mkdir -p docker'
 
                     // Copy the WAR file to the Docker build context
                     sh 'cp target/Mock.war docker/'
+
+                    // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
+                    def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
 
                     // Build the Docker image with the version tag
                     def dockerImage = docker.build("${APP_NAME}:${versionTag}", "./docker")
