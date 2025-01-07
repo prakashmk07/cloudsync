@@ -34,22 +34,6 @@ pipeline {
             }
         }
 
-        stage('Login to AWS ECR') {
-            steps {
-                script {
-                    // Use AWS credentials from Jenkins
-                    withAWS(credentials: 'aws-credentials', region: "${AWS_REGION}") {
-                        // Get the ECR login password and log in
-                        sh """
-                            aws ecr get-login-password --region ${AWS_REGION} > ecr_password.txt
-                            cat ecr_password.txt | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                            rm -f ecr_password.txt
-                        """
-                    }
-                }
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 script {
@@ -58,7 +42,7 @@ pipeline {
 
                     // Copy the WAR file to the Docker build context
                     sh 'cp target/Mock.war docker/'
-
+                    
                     // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
                     def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
 
@@ -71,8 +55,9 @@ pipeline {
         stage('Push Docker Image to AWS ECR') {
             steps {
                 script {
-                    // Tag and push the Docker image
-                    dockerImage.push("${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${env.BUILD_ID}")
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+                    sh "docker tag ${APP_NAME}:${versionTag} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${versionTag}"
+                    sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${versionTag}"
                 }
             }
         }
