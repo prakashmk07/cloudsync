@@ -2,17 +2,17 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = 'your-aws-account-id'
-        AWS_REGION = 'your-aws-region'
+        AWS_ACCOUNT_ID = '888958595564'
+        AWS_REGION = 'us-east-1'
         ECR_REPOSITORY = 'jobsync-repo'
         APP_NAME = 'jobsync'
         S3_BUCKET = 'jobsync-artifacts'
-        POSTGRES_USER = 'jobsync_user'
-        POSTGRES_PASSWORD = 'jobsync_password'
+        POSTGRES_USER = 'admin'
+        POSTGRES_PASSWORD = 'admin'
         POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = 'your-ec2-instance-ip'
+        EC2_INSTANCE_IP = '34.229.174.33'
         EC2_SSH_USER = 'ec2-user'
-        EC2_SSH_KEY = 'path/to/your/ssh/key.pem'
+        EC2_SSH_KEY = '/home/kernel/Desktop/Linux.pem'
     }
 
     stages {
@@ -99,10 +99,10 @@ pipeline {
 
     post {
         success {
-            emailext body: 'The build succeeded!', subject: 'Build Success', to: 'your-email@example.com'
+            emailext body: 'The build succeeded!', subject: 'Build Success', to: 'codesai127.0.0.1@gmail.com'
         }
         failure {
-            emailext body: 'The build failed!', subject: 'Build Failure', to: 'your-email@example.com'
+            emailext body: 'The build failed!', subject: 'Build Failure', to: 'codesai127.0.0.1@gmail.com'
         }
     }
 }
