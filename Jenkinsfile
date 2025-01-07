@@ -55,7 +55,7 @@ node {
             sh "mv target/Mock.war target/${warFileName}"
 
             // Upload the WAR file to S3
-            sh "aws s3 cp target/${warFileName} s3://${env.S3_BUCKET}/artifacts/"
+            sh "aws s3 cp /var/lib/jenkins/workspace/JobsSync/target/${warFileName} s3://${env.S3_BUCKET}/artifacts/"
         }
 
         stage('Deploy to EC2') {
