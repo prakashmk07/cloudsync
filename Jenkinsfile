@@ -1,109 +1,87 @@
-pipeline {
-    agent any
+node {
+    // Define environment variables
+    env.DOCKER_HUB_USER = 'sai127001'
+    env.DOCKER_HUB_REPO = 'jobssync'
+    env.APP_NAME = 'jobsync'
+    env.S3_BUCKET = 'jobsync-artifacts'
+    env.POSTGRES_USER = 'admin'
+    env.POSTGRES_PASSWORD = '#Sai9987886552'
+    env.POSTGRES_DB = 'jobsync_db'
+    env.EC2_INSTANCE_IP = '34.239.130.253'
+    env.EC2_SSH_USER = 'ec2-user'
 
-    environment {
-        DOCKER_HUB_USER = 'sai127001' 
-        DOCKER_HUB_REPO = 'jobssync' 
-        APP_NAME = 'jobsync'
-        S3_BUCKET = 'jobsync-artifacts'
-        POSTGRES_USER = 'admin'
-        POSTGRES_PASSWORD = '#Sai9987886552'
-        POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = '34.239.130.253'
-        EC2_SSH_USER = 'ec2-user'
-    }
+    // Define versionTag as a global variable
+    def versionTag = ""
 
-    stages {
+    try {
         stage('Checkout Git') {
-            steps {
-                git branch: 'master', url: 'https://github.com/SAI127001/JobsSync.git'
-            }
+            checkout scm
         }
 
         stage('Build with Maven') {
-            steps {
-                sh 'mvn clean package'
-            }
+            sh 'mvn clean package'
         }
 
         stage('Run Unit Tests') {
-            steps {
-                sh 'mvn test'
-            }
+            sh 'mvn test'
         }
 
         stage('Build Docker Image') {
-            steps {
-                script {
-                    // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
-                    def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
+            // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
+            versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
 
-                    // Copy the WAR file to the Docker build context
-                    sh 'cp target/Mock.war docker/'
+            // Copy the WAR file to the Docker build context
+            sh 'cp target/Mock.war docker/'
 
-                    // Build the Docker image with the version tag
-                    def dockerImage = docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}", "./docker")
-                }
-            }
+            // Build the Docker image with the version tag
+            docker.build("${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}", "./docker")
         }
 
         stage('Push Docker Image to Docker Hub') {
-            steps {
-                script {
-                    // Authenticate with Docker Hub
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USER', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USER} --password-stdin"
-                    }
-
-                    // Push the Docker image to Docker Hub
-                    sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}"
-                }
+            // Authenticate with Docker Hub using Jenkins credentials
+            withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USER', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                sh '''
+                    echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin
+                '''
             }
+
+            // Push the Docker image to Docker Hub
+            sh "docker push ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}"
         }
 
         stage('Upload WAR File to S3 with Versioning') {
-            steps {
-                script {
-                    // Rename the WAR file with the version tag
-                    def warFileName = "${APP_NAME}-${versionTag}.war"
-                    sh "mv target/Mock.war target/${warFileName}"
+            // Rename the WAR file with the version tag
+            def warFileName = "${env.APP_NAME}-${versionTag}.war"
+            sh "mv target/Mock.war target/${warFileName}"
 
-                    // Upload the WAR file to S3
-                    sh "aws s3 cp target/${warFileName} s3://${S3_BUCKET}/artifacts/"
-                }
-            }
+            // Upload the WAR file to S3
+            sh "aws s3 cp target/${warFileName} s3://${env.S3_BUCKET}/artifacts/"
         }
 
         stage('Deploy to EC2') {
-            steps {
-                script {
-                    // Use SSH Agent Plugin to manage the SSH key
-                    sshagent(['ec2-ssh-key']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no -i ${EC2_SSH_KEY} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << 'EOF'
-                            # Pull the Docker image from Docker Hub
-                            docker pull ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
+            // Use SSH Agent Plugin to manage the SSH key
+            sshagent(['ec2-ssh-key']) {
+                sh """
+                    ssh -o StrictHostKeyChecking=no -i ${env.EC2_SSH_KEY} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} << 'EOF'
+                    # Pull the Docker image from Docker Hub
+                    docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
 
-                            # Stop and remove the existing container (if any)
-                            docker stop ${APP_NAME} || true
-                            docker rm ${APP_NAME} || true
+                    # Stop and remove the existing container (if any)
+                    docker stop ${env.APP_NAME} || true
+                    docker rm ${env.APP_NAME} || true
 
-                            # Run the new container
-                            docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
-                            EOF
-                        """
-                    }
-                }
+                    # Run the new container
+                    docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
+                    EOF
+                """
             }
         }
-    }
 
-    post {
-        success {
-            emailext body: 'The build succeeded!', subject: 'Build Success', to: 'codesai127.0.0.1@gmail.com'
-        }
-        failure {
-            emailext body: 'The build failed!', subject: 'Build Failure', to: 'codesai127.0.0.1@gmail.com'
-        }
+        // Send success email
+        emailext body: 'The build succeeded!', subject: 'Build Success', to: 'codesai127.0.0.1@gmail.com'
+    } catch (Exception e) {
+        // Send failure email
+        emailext body: "The build failed: ${e.getMessage()}", subject: 'Build Failure', to: 'codesai127.0.0.1@gmail.com'
+        throw e // Re-throw the exception to mark the build as failed
     }
 }
