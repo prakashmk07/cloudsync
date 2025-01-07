@@ -1,6 +1,6 @@
 # **JobsSync CI/CD Pipeline**
 
-This document provides step-by-step instructions to set up a **CI/CD pipeline** for the **JobsSync application** using **Jenkins, Maven, Docker, AWS ECR, and S3**.
+This document provides step-by-step instructions to set up a **CI/CD pipeline** for the **JobsSync application** using **Jenkins, Maven, Docker, AWS ECR, and S3**. The pipeline includes **auto-versioning** for WAR files in S3 and Docker images.
 
 ---
 
@@ -40,7 +40,7 @@ The CI/CD pipeline performs the following steps:
 4. **Build Docker Image**: Create a Docker image for the application.
 5. **Push Docker Image to AWS ECR**: Upload the Docker image to AWS Elastic Container Registry.
 6. **Upload WAR File to S3**: Upload the WAR file to an S3 bucket with versioning enabled.
-7. **Deploy Application**: Deploy the Docker image or WAR file to the target environment.
+7. **Deploy to EC2**: Deploy the Docker image to an EC2 instance.
 
 ---
 
@@ -108,12 +108,15 @@ pipeline {
         POSTGRES_USER = 'jobsync_user'
         POSTGRES_PASSWORD = 'jobsync_password'
         POSTGRES_DB = 'jobsync_db'
+        EC2_INSTANCE_IP = 'your-ec2-instance-ip'
+        EC2_SSH_USER = 'ec2-user'
+        EC2_SSH_KEY = 'path/to/your/ssh/key.pem'
     }
 
     stages {
         stage('Checkout Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/SAI127001/JobsSync.git'
+                git branch: 'master', url: 'https://github.com/SAI127001/JobsSync.git'
             }
         }
 
@@ -132,9 +135,14 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
+                    def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
+
                     // Copy the WAR file to the Docker build context
                     sh 'cp target/Mock.war docker/'
-                    def dockerImage = docker.build("${APP_NAME}:${env.BUILD_ID}", "./docker")
+
+                    // Build the Docker image with the version tag
+                    def dockerImage = docker.build("${APP_NAME}:${versionTag}", "./docker")
                 }
             }
         }
@@ -143,8 +151,8 @@ pipeline {
             steps {
                 script {
                     sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-                    sh "docker tag ${APP_NAME}:${env.BUILD_ID} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${env.BUILD_ID}"
-                    sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${env.BUILD_ID}"
+                    sh "docker tag ${APP_NAME}:${versionTag} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${versionTag}"
+                    sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${versionTag}"
                 }
             }
         }
@@ -152,11 +160,8 @@ pipeline {
         stage('Upload WAR File to S3 with Versioning') {
             steps {
                 script {
-                    // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
-                    def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
-                    def warFileName = "${APP_NAME}-${versionTag}.war"
-
                     // Rename the WAR file with the version tag
+                    def warFileName = "${APP_NAME}-${versionTag}.war"
                     sh "mv target/Mock.war target/${warFileName}"
 
                     // Upload the WAR file to S3
@@ -165,11 +170,26 @@ pipeline {
             }
         }
 
-        stage('Deploy Application') {
+        stage('Deploy to EC2') {
             steps {
                 script {
-                    // Add deployment steps here (e.g., deploy to Docker or Kubernetes).
-                    echo 'Deploying JobsSync application with PostgreSQL...'
+                    // SSH into the EC2 instance and deploy the Docker image
+                    sshagent(['your-ssh-credentials-id']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -i ${EC2_SSH_KEY} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << 'EOF'
+                            # Pull the Docker image from ECR
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                            docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${versionTag}
+
+                            # Stop and remove the existing container (if any)
+                            docker stop ${APP_NAME} || true
+                            docker rm ${APP_NAME} || true
+
+                            # Run the new container
+                            docker run -d --name ${APP_NAME} -p 8081:8081 ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${versionTag}
+                            EOF
+                        """
+                    }
                 }
             }
         }
@@ -228,46 +248,69 @@ pipeline {
 
 ---
 
-### **Step 6: Run the Pipeline**
-1. **Trigger the Pipeline:**
-    - Manually trigger the pipeline by clicking **Build Now** in Jenkins.
-    - Alternatively, configure the pipeline to trigger automatically on Git pushes (using webhooks).
+### **Step 6: Set Up EC2 Instance**
+1. **Launch an EC2 Instance:**
+    - Go to **AWS EC2** → **Launch Instance.**
+    - Choose an Amazon Linux 2 AMI.
+    - Configure the instance (e.g., `t2.micro`).
+    - Add a security group that allows SSH (port 22) and HTTP (port 8081) access.
+    - Launch the instance and download the SSH key pair (`.pem` file).
 
-2. **Monitor the Pipeline:**
+2. **Install Docker on EC2:**
+    - SSH into the EC2 instance:
+    ```
+    ssh -i path/to/your/key.pem ec2-user@<ec2-instance-ip>
+    ```
+    - Install Docker:
+    ```
+    sudo yum update -y
+    sudo amazon-linux-extras install docker -y
+    sudo service docker start
+    sudo usermod -a -G docker ec2-user
+    ```
+
+3. **Configure AWS CLI on EC2:**
+    - Install AWS CLI:
+    ```
+    sudo yum install aws-cli -y
+    ```
+    - Configure AWS credentials:
+    ```
+    aws configure
+    ```
+
+---
+
+### **Step 7: Run the Pipeline**
+1. **Trigger the Pipeline:**
+    - Manually trigger the pipeline by clicking Build Now in Jenkins.
+    - Alternatively, configure the pipeline to trigger automatically on Git pushes (using webhooks).
+    
+2. **Monitor the Pipeline**
     - Check the pipeline logs in real-time to monitor progress.
     - Verify that:
-        - The WAR file is uploaded to S3.
-        - The Docker image is pushed to AWS ECR.
-
+        - **The WAR file is uploaded to S3 with a unique version tag.**
+        - **The Docker image is pushed to AWS ECR with a unique version tag.**
+        - **The application is deployed to the EC2 instance.**
 ---
 
-### **Step 7: Deploy the Application**
-1. **Deploy to Docker:**
-    - Pull the Docker image from AWS ECR:
-    ```
-    aws ecr get-login-password --region <your-aws-region> | docker login --username AWS --password-stdin <your-aws-account-id>.dkr.ecr.<your-aws-region>.amazonaws.com
-    docker pull <your-aws-account-id>.dkr.ecr.<your-aws-region>.amazonaws.com/jobsync-repo:<version>
-    ```
-    - Run the Docker container:
-    ```
-    docker run -d --name jobsync -p 8081:8081 <your-aws-account-id>.dkr.ecr.<your-aws-region>.amazonaws.com/jobsync-repo:<version>
-    ```
-2. **Access the Application:**
+### **Step 8: Deploy to EC2**
+1. **Access the Application:**
     - Open your browser and go to:
     ```
-    http://localhost:8081
+    http://<ec2-instance-ip>:8081
     ```
 ---
-
 ### **Pipeline Flow**
 
 1. Developer pushes code to the Git repository.
 2. Jenkins triggers the pipeline:
     - Builds the WAR file using Maven.
     - Runs unit tests.
-    - Builds and pushes the Docker image to AWS ECR.
-    - Uploads the WAR file to S3 with versioning.
-3. Application is deployed to the target environment.
+    - Builds and pushes the Docker image to AWS ECR with a unique version tag.
+    - Uploads the WAR file to S3 with a unique version tag.
+    - Deploys the Docker image to the EC2 instance.
+3. Application is accessible on the EC2 instance.
 
 ---
 
@@ -277,11 +320,14 @@ pipeline {
     - Check the Jenkins console output for errors.
     - Ensure all required plugins are installed.
 - **Docker Build Fails:**
-    - Verify the Dockerfile is correct.
+    - Verify the `Dockerfile` is correct.
     - Ensure Docker is installed and running on the Jenkins server.
 - **AWS ECR Push Fails:**
     - Verify AWS credentials are correctly configured in Jenkins.
     - Ensure the ECR repository exists.
+- **EC2 Deployment Fails:**
+    - Verify the EC2 instance is running and accessible via SSH.
+    - Ensure Docker is installed and running on the EC2 instance.
 
 ---
 
