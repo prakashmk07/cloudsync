@@ -8,11 +8,10 @@ pipeline {
         APP_NAME = 'jobsync'
         S3_BUCKET = 'jobsync-artifacts'
         POSTGRES_USER = 'admin'
-        POSTGRES_PASSWORD = 'admin'
+        POSTGRES_PASSWORD = credentials('POSTGRES_PASSWORD') // Use Jenkins credentials
         POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = '3.83.50.19'
-        EC2_SSH_USER = 'ubuntu'
-        EC2_SSH_KEY = '/home/kernel/Desktop/Linux.pem'
+        EC2_INSTANCE_IP = '34.229.174.33'
+        EC2_SSH_USER = 'ec2-user'
     }
 
     stages {
@@ -37,14 +36,11 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Create the docker directory if it doesn't exist
-                    sh 'mkdir -p docker'
+                    // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
+                    def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
 
                     // Copy the WAR file to the Docker build context
                     sh 'cp target/Mock.war docker/'
-
-                    // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
-                    def versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
 
                     // Build the Docker image with the version tag
                     def dockerImage = docker.build("${APP_NAME}:${versionTag}", "./docker")
@@ -55,8 +51,8 @@ pipeline {
         stage('Push Docker Image to AWS ECR') {
             steps {
                 script {
-                    // Authenticate with AWS ECR
-                    sh "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 888958595564.dkr.ecr.us-east-1.amazonaws.com"
+                    // Authenticate Docker with AWS ECR
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
                     // Tag and push the Docker image
                     sh "docker tag ${APP_NAME}:${versionTag} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${versionTag}"
@@ -81,8 +77,8 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 script {
-                    // SSH into the EC2 instance and deploy the Docker image
-                    sshagent(['your-ssh-credentials-id']) {
+                    // Use SSH Agent Plugin to manage the SSH key
+                    sshagent(['ec2-ssh-key']) {
                         sh """
                             ssh -o StrictHostKeyChecking=no -i ${EC2_SSH_KEY} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << 'EOF'
                             # Pull the Docker image from ECR
