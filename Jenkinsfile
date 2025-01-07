@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = 'your-docker-hub-username' // Your Docker Hub username
-        DOCKER_HUB_REPO = 'your-docker-hub-repo' // Your Docker Hub repository name
+        DOCKER_HUB_USER = 'sai127001' 
+        DOCKER_HUB_REPO = 'sai127001/jobssync' 
         APP_NAME = 'jobsync'
+        S3_BUCKET = 'jobsync-artifacts'
         POSTGRES_USER = 'admin'
         POSTGRES_PASSWORD = '#Sai9987886552'
         POSTGRES_DB = 'jobsync_db'
@@ -56,6 +57,19 @@ pipeline {
 
                     // Push the Docker image to Docker Hub
                     sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}"
+                }
+            }
+        }
+
+        stage('Upload WAR File to S3 with Versioning') {
+            steps {
+                script {
+                    // Rename the WAR file with the version tag
+                    def warFileName = "${APP_NAME}-${versionTag}.war"
+                    sh "mv target/Mock.war target/${warFileName}"
+
+                    // Upload the WAR file to S3
+                    sh "aws s3 cp target/${warFileName} s3://${S3_BUCKET}/artifacts/"
                 }
             }
         }
