@@ -61,6 +61,12 @@ node {
             }
         }
 
+        stage('Debug SSH Key') {
+            sshagent(['ec2-ssh-key']) {
+                sh 'ssh-add -l' // List loaded keys
+            }
+        }
+
         stage('Deploy to EC2') {
             // Use SSH Agent Plugin to manage the SSH key
             sshagent(['ec2-ssh-key']) {
