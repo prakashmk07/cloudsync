@@ -29,6 +29,7 @@ node {
         stage('Build Docker Image') {
             // Generate a unique version tag (e.g., Jenkins build ID + timestamp)
             versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
+            echo "Generated Version Tag: ${versionTag}"
 
             // Copy the WAR file to the Docker build context
             sh 'cp target/Mock.war docker/'
@@ -55,7 +56,9 @@ node {
             sh "mv target/Mock.war target/${warFileName}"
 
             // Upload the WAR file to S3
-            sh "aws s3 cp /var/lib/jenkins/workspace/JobsSync/target/${warFileName} s3://${env.S3_BUCKET}/artifacts/"
+            withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                sh "aws s3 cp target/${warFileName} s3://${env.S3_BUCKET}/artifacts/"
+            }
         }
 
         stage('Deploy to EC2') {
