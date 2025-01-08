@@ -85,7 +85,6 @@ pipeline {
 
                                 # Run the new container
                                 docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
-
                                 # Verify the container is running
                                 sleep 10
                                 docker ps --filter "name=${env.APP_NAME}" --format "{{.Status}}"
