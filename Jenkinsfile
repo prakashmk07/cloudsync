@@ -66,7 +66,7 @@ node {
             withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
                 sh """
                     # Set permissions for the SSH key file
-                    chmod 600 ${SSH_KEY_FILE}
+                    chmod 400 ${SSH_KEY_FILE}
 
                     # SSH into the EC2 instance and deploy the Docker container
                     ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} << 'EOF'
