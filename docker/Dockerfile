@@ -5,7 +5,7 @@ FROM tomcat:9.0
 WORKDIR /usr/local/tomcat
 
 # Copy the WAR file from the target directory to the Tomcat webapps directory
-COPY target/Mock.war webapps/
+COPY ../target/Mock.war webapps/
 
 # Expose port 8081
 EXPOSE 8081
