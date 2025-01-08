@@ -75,7 +75,7 @@ pipeline {
                             chmod 400 ${SSH_KEY_FILE}
 
                             # SSH into the EC2 instance and deploy the Docker container
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} << 'ENDSSH'
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} /bin/bash << 'ENDSSH'
                             # Pull the Docker image from Docker Hub
                             docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
 
