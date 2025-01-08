@@ -69,7 +69,7 @@ node {
                     chmod 400 ${SSH_KEY_FILE}
 
                     # SSH into the EC2 instance and deploy the Docker container
-                    ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} << 'EOF'
+                    ssh -v -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} << 'EOF'
                     # Pull the Docker image from Docker Hub
                     docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
 
