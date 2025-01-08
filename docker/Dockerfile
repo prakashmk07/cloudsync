@@ -4,8 +4,8 @@ FROM tomcat:9.0
 # Set the working directory inside the container
 WORKDIR /usr/local/tomcat
 
-# Copy the WAR file from the target directory to the Tomcat webapps directory
-COPY ../target/Mock.war webapps/
+# Copy the WAR file from the docker directory to the Tomcat webapps directory
+COPY Mock.war /usr/local/tomcat/webapps/
 
 # Expose port 8081
 EXPOSE 8081
