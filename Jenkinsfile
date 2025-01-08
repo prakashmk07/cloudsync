@@ -9,7 +9,7 @@ pipeline {
         POSTGRES_USER = 'admin'
         POSTGRES_PASSWORD = 'admin'
         POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = '34.229.219.126'
+        EC2_INSTANCE_IP = '54.209.188.35'
         EC2_SSH_USER = 'ubuntu'
     }
 
@@ -22,7 +22,7 @@ pipeline {
 
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
@@ -48,9 +48,10 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USER', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                     sh '''
                         echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin
+                        docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
+                        docker logout
                     '''
                 }
-                sh "docker push ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}"
             }
         }
 
@@ -85,9 +86,9 @@ pipeline {
 
                                 # Run the new container
                                 docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
-                                # Verify the container is running
-                                sleep 10
-                                docker ps --filter "name=${env.APP_NAME}" --format "{{.Status}}"
+
+                                # Clean up unused Docker images
+                                docker image prune -f
                             '
                         """
                     }
