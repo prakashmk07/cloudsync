@@ -7,7 +7,7 @@ node {
     env.POSTGRES_USER = 'admin'
     env.POSTGRES_PASSWORD = 'admin'
     env.POSTGRES_DB = 'jobsync_db'
-    env.EC2_INSTANCE_IP = '34.239.130.253'
+    env.EC2_INSTANCE_IP = '172.31.82.5'
     env.EC2_SSH_USER = 'ec2-user'
 
     // Define versionTag as a global variable
