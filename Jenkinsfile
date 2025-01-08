@@ -75,21 +75,21 @@ pipeline {
                             chmod 400 ${SSH_KEY_FILE}
 
                             # SSH into the EC2 instance and deploy the Docker container
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} /bin/bash << 'ENDSSH'
-                            # Pull the Docker image from Docker Hub
-                            docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} '
+                                # Pull the Docker image from Docker Hub
+                                docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
 
-                            # Stop and remove the existing container (if any)
-                            docker stop ${env.APP_NAME} || true
-                            docker rm ${env.APP_NAME} || true
+                                # Stop and remove the existing container (if any)
+                                docker stop ${env.APP_NAME} || true
+                                docker rm ${env.APP_NAME} || true
 
-                            # Run the new container
-                            docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
+                                # Run the new container
+                                docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
 
-                            # Verify the container is running
-                            sleep 10
-                            docker ps --filter "name=${env.APP_NAME}" --format "{{.Status}}"
-                            ENDSSH
+                                # Verify the container is running
+                                sleep 10
+                                docker ps --filter "name=${env.APP_NAME}" --format "{{.Status}}"
+                            '
                         """
                     }
                 }
