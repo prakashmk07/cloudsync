@@ -6,7 +6,10 @@ pipeline {
         DOCKER_HUB_REPO = 'jobssync'
         APP_NAME = 'jobsync'
         S3_BUCKET = 'jobsync-artifacts'
-        EC2_INSTANCE_IP = '54.209.188.35'
+        POSTGRES_USER = 'admin'
+        POSTGRES_PASSWORD = 'admin'
+        POSTGRES_DB = 'jobsync_db'
+        EC2_INSTANCE_IP = '34.229.219.126'
         EC2_SSH_USER = 'ubuntu'
     }
 
@@ -19,7 +22,7 @@ pipeline {
 
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean package'
             }
         }
 
@@ -45,9 +48,9 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USER', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                     sh '''
                         echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin
-                        docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
                     '''
                 }
+                sh "docker push ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}"
             }
         }
 
@@ -74,17 +77,17 @@ pipeline {
                             # SSH into the EC2 instance and deploy the Docker container
                             ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} '
                                 # Pull the Docker image from Docker Hub
-                                docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag} || exit 1
+                                docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
 
                                 # Stop and remove the existing container (if any)
                                 docker stop ${env.APP_NAME} || true
                                 docker rm ${env.APP_NAME} || true
 
                                 # Run the new container
-                                docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag} || exit 1
-
-                                # Clean up unused Docker images
-                                docker image prune -f
+                                docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
+                                # Verify the container is running
+                                sleep 10
+                                docker ps --filter "name=${env.APP_NAME}" --format "{{.Status}}"
                             '
                         """
                     }
@@ -95,19 +98,10 @@ pipeline {
 
     post {
         success {
-            emailext body: """
-                The build and deployment succeeded!
-                Build Number: ${env.BUILD_NUMBER}
-                Version Tag: ${versionTag}
-                Jenkins Build URL: ${env.BUILD_URL}
-            """, subject: 'Build Success', to: 'codesai127.0.0.1@gmail.com'
+            emailext body: 'The build and deployment succeeded!', subject: 'Build Success', to: 'codesai127.0.0.1@gmail.com'
         }
         failure {
-            emailext body: """
-                The build or deployment failed. Please check the Jenkins logs for details.
-                Build Number: ${env.BUILD_NUMBER}
-                Jenkins Build URL: ${env.BUILD_URL}
-            """, subject: 'Build Failure', to: 'codesai127.0.0.1@gmail.com'
+            emailext body: "The build or deployment failed. Please check the Jenkins logs for details.", subject: 'Build Failure', to: 'codesai127.0.0.1@gmail.com'
         }
     }
 }
