@@ -9,7 +9,7 @@ pipeline {
         POSTGRES_USER = 'admin'
         POSTGRES_PASSWORD = 'admin'
         POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = '54.90.80.74'
+        EC2_INSTANCE_IP = '54.242.42.193'
         EC2_SSH_USER = 'ubuntu'
     }
 
