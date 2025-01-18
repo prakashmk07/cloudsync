@@ -5,11 +5,11 @@ pipeline {
         DOCKER_HUB_USER = 'sai127001'
         DOCKER_HUB_REPO = 'jobssync'
         APP_NAME = 'jobsync'
-        S3_BUCKET = 'jobsync-artifacts'
+        S3_BUCKET = 'jobsync-artifacts.sai'
         POSTGRES_USER = 'admin'
         POSTGRES_PASSWORD = 'admin'
         POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = '54.242.42.193'
+        EC2_INSTANCE_IP = '3.93.165.123'
         EC2_SSH_USER = 'ubuntu'
     }
 
