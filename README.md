@@ -7,7 +7,7 @@ sudo apt upgrade -y
 ```
 ### **2. Install Java (Jenkins Dependency)**
 ```bash
-sudo apt install -y openjdk-11-jdk
+sudo apt install -y openjdk-17-jdk
 java -version
 ```
 
