@@ -2,14 +2,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = 'sai127001'
+        DOCKER_HUB_USER = 'pdeveopsh'
         DOCKER_HUB_REPO = 'jobssync'
         APP_NAME = 'jobsync'
-        S3_BUCKET = 'jobsync-artifacts.sai'
-        POSTGRES_USER = 'admin'
-        POSTGRES_PASSWORD = 'admin'
-        POSTGRES_DB = 'jobsync_db'
-        EC2_INSTANCE_IP = '3.93.165.123'
+        EC2_INSTANCE_IP = '13.126.83.225' 
         EC2_SSH_USER = 'ubuntu'
     }
 
@@ -43,9 +39,9 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push Docker Image to Docker Hub') {         
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_HUB_USER', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: '001', usernameVariable: 'pdeveopsh', passwordVariable: 'Prakash07@')]) {
                     sh '''
                         echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USER --password-stdin
                     '''
@@ -54,21 +50,11 @@ pipeline {
             }
         }
 
-        stage('Upload WAR File to S3 with Versioning') {
-            steps {
-                script {
-                    def warFileName = "${env.APP_NAME}-${versionTag}.war"
-                    sh "mv target/Mock.war target/${warFileName}"
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                        sh "aws s3 cp target/${warFileName} s3://${env.S3_BUCKET}/artifacts/"
-                    }
-                }
-            }
-        }
+        
 
         stage('Deploy to EC2') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh-key', keyFileVariable: 'SSH_KEY_FILE')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: 'deployment-server', keyFileVariable: 'SSH_KEY_FILE')]) {
                     script {
                         sh """
                             # Set permissions for the SSH key file
