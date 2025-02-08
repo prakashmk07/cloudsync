@@ -31,10 +31,12 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
-                    echo "Generated Version Tag: ${versionTag}"
+                    env.VERSION_TAG = "${BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
+                    echo "Generated Version Tag: ${env.VERSION_TAG}"
+                    
                     sh 'cp target/Mock.war docker/'
-                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}", "./docker")
+                    
+                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}", "./docker")
                 }
             }
         }
@@ -43,10 +45,10 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     script {
-                        sh '''
+                        sh """
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker push "$DOCKER_USER/$DOCKER_HUB_REPO:$BUILD_ID"
-                        '''
+                            docker push "$DOCKER_USER/$DOCKER_HUB_REPO:$VERSION_TAG"
+                        """
                     }
                 }
             }
@@ -65,12 +67,12 @@ pipeline {
                             ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << 'EOF'
                                 echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
 
-                                docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${BUILD_ID}
+                                docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${VERSION_TAG}
 
                                 docker stop ${APP_NAME} || true
                                 docker rm ${APP_NAME} || true
 
-                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_USER}/${DOCKER_HUB_REPO}:${BUILD_ID}
+                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_USER}/${DOCKER_HUB_REPO}:${VERSION_TAG}
 
                                 sleep 10
                                 docker ps --filter "name=${APP_NAME}" --format "{{.Status}}"
@@ -81,13 +83,15 @@ pipeline {
             }
         }
     }
-
     post {
-        success {
-            emailext body: 'The build and deployment succeeded!', subject: 'Build Success', to: 'prakashmurugaiya07@gmail.com.com'
-        }
-        failure {
-            emailext body: "The build or deployment failed. Please check the Jenkins logs for details.", subject: 'Build Failure', to: 'prakashmurugaiya07@gmail.com.com'
-        }
+    success {
+        emailext body: 'The build and deployment succeeded!', 
+                 subject: 'Build Success', 
+                 to: 'prakashmurugaiya07@gmail.com'
+    }
+    failure {
+        emailext body: "The build or deployment failed. Please check the Jenkins logs for details.", 
+                 subject: 'Build Failure', 
+                 to: 'prakashmurugaiya07@gmail.com'
     }
 }
