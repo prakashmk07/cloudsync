@@ -35,7 +35,7 @@ pipeline {
                     echo "Generated Version Tag: ${env.VERSION_TAG}"
 
                     sh 'cp target/Mock.war docker/'
-                    
+                    sh 'pwd && ls -la' // Debugging step
                     docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}")
                 }
             }
