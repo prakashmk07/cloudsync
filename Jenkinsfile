@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -35,10 +34,10 @@ pipeline {
                     env.VERSION_TAG = "${BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
                     echo "Generated Version Tag: ${env.VERSION_TAG}"
 
-                    sh 'cp target/Mock.war docker/'
-                    sh 'ls -la docker/'  // Debugging step
+                    sh 'ls -la target/' // Debugging step
+                    sh 'mkdir -p docker && cp target/Mock.war docker/'
 
-                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}", "docker")
+                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}", "./docker")
                 }
             }
         }
@@ -66,15 +65,15 @@ pipeline {
                         sh """
                             chmod 400 ${SSH_KEY_FILE}
 
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << EOF
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << "EOF"
                                 echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
 
-                                docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}
+                                docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${VERSION_TAG}
 
                                 docker stop ${APP_NAME} || true
                                 docker rm ${APP_NAME} || true
 
-                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}
+                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_USER}/${DOCKER_HUB_REPO}:${VERSION_TAG}
 
                                 sleep 10
                                 docker ps --filter "name=${APP_NAME}" --format "{{.Status}}"
