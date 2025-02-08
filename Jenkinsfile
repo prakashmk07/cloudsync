@@ -83,15 +83,16 @@ pipeline {
             }
         }
     }
-    post {
-    success {
-        emailext body: 'The build and deployment succeeded!', 
-                 subject: 'Build Success', 
-                 to: 'prakashmurugaiya07@gmail.com'
-    }
-    failure {
-        emailext body: "The build or deployment failed. Please check the Jenkins logs for details.", 
-                 subject: 'Build Failure', 
-                 to: 'prakashmurugaiya07@gmail.com'
+   post {
+        success {
+            emailext body: 'The build and deployment succeeded!', 
+                     subject: 'Build Success', 
+                     to: 'prakashmurugaiya07@gmail.com'
+        }
+        failure {
+            emailext body: "The build or deployment failed. Please check the Jenkins logs for details.", 
+                     subject: 'Build Failure', 
+                     to: 'prakashmurugaiya07@gmail.com'
+        }
     }
 }
