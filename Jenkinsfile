@@ -43,14 +43,12 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
                 }
-                sh "docker push ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}"
+                sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}"
             }
         }
-
-        
 
         stage('Deploy to EC2') {
             steps {
@@ -61,19 +59,23 @@ pipeline {
                             chmod 400 ${SSH_KEY_FILE}
 
                             # SSH into the EC2 instance and deploy the Docker container
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${env.EC2_SSH_USER}@${env.EC2_INSTANCE_IP} '
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} '
+                                # Log in to Docker inside the EC2 instance
+                                echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+
                                 # Pull the Docker image from Docker Hub
-                                docker pull ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
+                                docker pull ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
 
                                 # Stop and remove the existing container (if any)
-                                docker stop ${env.APP_NAME} || true
-                                docker rm ${env.APP_NAME} || true
+                                docker stop ${APP_NAME} || true
+                                docker rm ${APP_NAME} || true
 
                                 # Run the new container
-                                docker run -d --name ${env.APP_NAME} -p 8081:8081 ${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}
+                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
+
                                 # Verify the container is running
                                 sleep 10
-                                docker ps --filter "name=${env.APP_NAME}" --format "{{.Status}}"
+                                docker ps --filter "name=${APP_NAME}" --format "{{.Status}}"
                             '
                         """
                     }
