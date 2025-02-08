@@ -35,8 +35,9 @@ pipeline {
                     echo "Generated Version Tag: ${env.VERSION_TAG}"
 
                     sh 'cp target/Mock.war docker/'
-                    sh 'pwd && ls -la' // Debugging step
-                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}")
+                    sh 'ls -la docker/'  // Debugging step
+
+                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}", "docker")
                 }
             }
         }
@@ -64,7 +65,7 @@ pipeline {
                         sh """
                             chmod 400 ${SSH_KEY_FILE}
 
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << "EOF"
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << EOF
                                 echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
 
                                 docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}
