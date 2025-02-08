@@ -34,7 +34,7 @@ pipeline {
                     versionTag = "${env.BUILD_ID}-${new Date().format('yyyyMMddHHmmss')}"
                     echo "Generated Version Tag: ${versionTag}"
                     sh 'cp target/Mock.war docker/'
-                    docker.build("${env.DOCKER_HUB_USER}/${env.DOCKER_HUB_REPO}:${versionTag}", "./docker")
+                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}", "./docker")
                 }
             }
         }
@@ -42,41 +42,39 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {         
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    '''
+                    script {
+                        sh '''
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push "$DOCKER_USER/$DOCKER_HUB_REPO:$BUILD_ID"
+                        '''
+                    }
                 }
-                sh "docker push ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}"
             }
         }
 
         stage('Deploy to EC2') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'deployment-server', keyFileVariable: 'SSH_KEY_FILE')]) {
+                withCredentials([
+                    sshUserPrivateKey(credentialsId: 'deployment-server', keyFileVariable: 'SSH_KEY_FILE'),
+                    usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
+                ]) {
                     script {
                         sh """
-                            # Set permissions for the SSH key file
                             chmod 400 ${SSH_KEY_FILE}
 
-                            # SSH into the EC2 instance and deploy the Docker container
-                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} '
-                                # Log in to Docker inside the EC2 instance
+                            ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << 'EOF'
                                 echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
 
-                                # Pull the Docker image from Docker Hub
-                                docker pull ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
+                                docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${BUILD_ID}
 
-                                # Stop and remove the existing container (if any)
                                 docker stop ${APP_NAME} || true
                                 docker rm ${APP_NAME} || true
 
-                                # Run the new container
-                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${versionTag}
+                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_USER}/${DOCKER_HUB_REPO}:${BUILD_ID}
 
-                                # Verify the container is running
                                 sleep 10
                                 docker ps --filter "name=${APP_NAME}" --format "{{.Status}}"
-                            '
+                            EOF
                         """
                     }
                 }
@@ -86,10 +84,10 @@ pipeline {
 
     post {
         success {
-            emailext body: 'The build and deployment succeeded!', subject: 'Build Success', to: 'codesai127.0.0.1@gmail.com'
+            emailext body: 'The build and deployment succeeded!', subject: 'Build Success', to: 'prakashmurugaiya07@gmail.com.com'
         }
         failure {
-            emailext body: "The build or deployment failed. Please check the Jenkins logs for details.", subject: 'Build Failure', to: 'codesai127.0.0.1@gmail.com'
+            emailext body: "The build or deployment failed. Please check the Jenkins logs for details.", subject: 'Build Failure', to: 'prakashmurugaiya07@gmail.com.com'
         }
     }
 }
