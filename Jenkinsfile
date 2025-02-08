@@ -37,7 +37,7 @@ pipeline {
                     sh 'ls -la target/' // Debugging step
                     sh 'mkdir -p docker && cp target/Mock.war docker/'
 
-                    docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}", "./docker")
+                    sudo docker.build("${DOCKER_HUB_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}", "./docker")
                 }
             }
         }
