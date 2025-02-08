@@ -48,8 +48,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     script {
                         sh """
-                                echo "$DOCKER_PASS" | sudo docker login -u "$DOCKER_USER" --password-stdin
-                            sudo docker push "${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}"
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push "${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}"
                         """
                     }
                 }
@@ -67,15 +67,18 @@ pipeline {
                             chmod 400 ${SSH_KEY_FILE}
 
                             ssh -o StrictHostKeyChecking=no -i ${SSH_KEY_FILE} ${EC2_SSH_USER}@${EC2_INSTANCE_IP} << EOF
-    echo "${DOCKER_PASS}" | sudo docker login -u "${DOCKER_USER}" --password-stdin
-    sudo docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}
-    sudo docker stop ${APP_NAME} || true
-    sudo docker rm ${APP_NAME} || true
-    sudo docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}
-    sleep 10
-    sudo docker ps --filter "name=${APP_NAME}" --format "{{.Status}}"
-EOF
+                                echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
 
+                                docker pull ${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}
+
+                                docker stop ${APP_NAME} || true
+                                docker rm ${APP_NAME} || true
+
+                                docker run -d --name ${APP_NAME} -p 8081:8081 ${DOCKER_USER}/${DOCKER_HUB_REPO}:${env.VERSION_TAG}
+
+                                sleep 10
+                                docker ps --filter "name=${APP_NAME}" --format "{{.Status}}"
+                            EOF
                         """
                     }
                 }
