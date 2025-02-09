@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_HUB_REPO = 'jobssync'  // Docker Hub repository name
         APP_NAME = 'jobsync'          // Application name
-        EC2_INSTANCE_IP = '13.126.83.225'  // EC2 instance IP
+        EC2_INSTANCE_IP = '43.204.232.48 '  // EC2 instance IP
         EC2_SSH_USER = 'ubuntu'       // SSH user for EC2
     }
 
