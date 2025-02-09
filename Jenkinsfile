@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_HUB_REPO = 'jobssync'  // Docker Hub repository name
         APP_NAME = 'jobsync'          // Application name
-        EC2_INSTANCE_IP = '43.204.232.48 '  // EC2 instance IP
+        EC2_INSTANCE_IP = '43.204.144.141 '  // EC2 instance IP
         EC2_SSH_USER = 'ubuntu'       // SSH user for EC2
     }
 
@@ -94,7 +94,7 @@ pipeline {
                             chmod 400 \$SSH_KEY_FILE
 
                             # SSH into the EC2 instance and deploy the application
-                            ssh -o StrictHostKeyChecking=no -i \$SSH_KEY_FILE ${EC2_SSH_USER}@${EC2_INSTANCE_IP} "
+                            ssh -o StrictHostKeyChecking=no -i \$SSH_KEY_FILE ${EC2_SSH_USER}@${EC2_INSTANCE_IP} '
                                 # Log in to Docker Hub
                                 echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
 
@@ -114,7 +114,7 @@ pipeline {
                                 # Verify the deployment
                                 sleep 10  # Wait for the application to start
                                 curl -s localhost:8081 || echo 'Application not responding'
-                            "
+                            '
                         """
                     }
                 }
